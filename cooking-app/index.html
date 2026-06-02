@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="下料指南">
+<meta name="theme-color" content="#e85d3a">
+<meta name="description" content="做饭食材下料顺序指南 - 凉水下锅还是热水下锅？">
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<title>下料顺序指南</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #faf7f2;
+    color: #3d3226;
+    min-height: 100%;
+    min-height: 100dvh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #e85d3a 0%, #d4452b 40%, #c0392b 100%);
+    color: #fff;
+    padding: max(20px, env(safe-area-inset-top, 0px) + 12px) 20px 20px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+  }
+  .header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.03em; }
+  .header p { font-size: 0.82rem; opacity: 0.85; margin-top: 2px; }
+
+  /* ── Search ── */
+  .search-wrap {
+    padding: 0 16px;
+    position: sticky;
+    top: 76px;
+    z-index: 10;
+    margin-top: 12px;
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 0 16px;
+    transition: box-shadow 0.2s;
+  }
+  .search-box:focus-within { box-shadow: 0 2px 16px rgba(232,93,58,0.22); }
+  .search-icon { font-size: 1.1rem; opacity: 0.4; flex-shrink: 0; margin-right: 8px; }
+  .search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+    padding: 12px 0;
+    background: transparent;
+    color: #3d3226;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  .search-input::placeholder { color: #bfb8ae; }
+  .search-clear {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #bfb8ae;
+    padding: 6px 2px 6px 8px;
+    display: none;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .search-clear.visible { display: block; }
+
+  /* ── Category scroll ── */
+  .cats-scroll {
+    padding: 14px 16px 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    display: flex;
+    gap: 8px;
+  }
+  .cats-scroll::-webkit-scrollbar { display: none; }
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 16px;
+    border-radius: 18px;
+    border: 1.5px solid #ddd6c8;
+    background: #fff;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    color: #6b5e4e;
+    flex-shrink: 0;
+  }
+  .tab:active { transform: scale(0.95); }
+  .tab.active { background: #e85d3a; color: #fff; border-color: #e85d3a; }
+
+  /* ── Grid ── */
+  .main { padding: 12px 12px 20px; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  @media (min-width: 600px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 900px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: #bfb8ae;
+    font-size: 1rem;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .card:active { transform: scale(0.985); }
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 14px 10px;
+  }
+  .card-icon {
+    width: 46px; height: 46px;
+    min-width: 46px;
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+  }
+  .card-name { font-size: 1.1rem; font-weight: 700; }
+  .card-cat { font-size: 0.75rem; color: #a89a84; margin-top: 1px; }
+  .card-body { padding: 0 14px 14px; }
+
+  .info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .info-label {
+    flex-shrink: 0;
+    min-width: 64px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #a89a84;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding-top: 2px;
+  }
+  .info-value { font-size: 0.87rem; color: #3d3226; line-height: 1.5; }
+
+  .water-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .water-hot  { background: #fde8e4; color: #d4452b; }
+  .water-cold { background: #e3f0fd; color: #2b6cb0; }
+  .water-both { background: #fef3e0; color: #b7791f; }
+
+  .prep-list { list-style: none; }
+  .prep-list li {
+    position: relative;
+    padding-left: 16px;
+    margin-bottom: 4px;
+    font-size: 0.83rem;
+    color: #5c4f3e;
+  }
+  .prep-list li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 7px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #e85d3a;
+  }
+
+  .tip-text { color: #e85d3a; font-style: italic; font-size: 0.83rem; }
+
+  .severity-wrap { margin-top: 8px; }
+  .severity-label { font-size: 0.72rem; color: #a89a84; margin-bottom: 2px; }
+  .severity-bar { height: 5px; background: #f0ece4; border-radius: 3px; overflow: hidden; }
+  .severity-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+  .sev-low  { background: #48bb78; }
+  .sev-mid  { background: #ecc94b; }
+  .sev-high { background: #e85d3a; }
+
+  /* ── To Top button ── */
+  .to-top {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+    right: 16px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #e85d3a;
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 14px rgba(232,93,58,0.35);
+    font-size: 1.3rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 8;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+  .to-top.visible { display: flex; }
+  .to-top:active { transform: scale(0.9); }
+
+  /* ── Result count ── */
+  .result-count {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #bfb8ae;
+    padding: 0 0 8px;
+  }
+
+  /* ── Install banner ── */
+  .install-banner {
+    display: none;
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    left: 16px; right: 16px;
+    background: #3d3226;
+    color: #fff;
+    padding: 14px 16px;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+    z-index: 20;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.88rem;
+  }
+  .install-banner.show { display: flex; }
+  .install-btn {
+    flex-shrink: 0;
+    background: #e85d3a;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .install-btn:active { opacity: 0.8; }
+  .install-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: #a89a84;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>下料顺序指南</h1>
+  <p>肉类 · 蔬菜 — 凉水下锅还是热水下锅？</p>
+</div>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" type="text" placeholder="搜索食材，如 排骨、菠菜、土豆…" autocomplete="off" enterkeyhint="search">
+    <button class="search-clear" id="searchClear">✕</button>
+  </div>
+</div>
+
+<div class="cats-scroll" id="catsScroll"></div>
+
+<div class="main">
+  <div class="result-count" id="resultCount"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<button class="to-top" id="toTop" title="回到顶部">↑</button>
+
+<div class="install-banner" id="installBanner">
+  <span>📱 安装到手机桌面，随时查看</span>
+  <button class="install-btn" id="installBtn">安装</button>
+  <button class="install-close" id="installClose">✕</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════
+const CATEGORIES = [
+  { key: 'all',    label: '全部', icon: '📋' },
+  { key: 'pork',   label: '猪肉', icon: '🐖' },
+  { key: 'beef',   label: '牛肉', icon: '🐂' },
+  { key: 'poultry',label: '禽肉', icon: '🐔' },
+  { key: 'lamb',   label: '羊肉', icon: '🐑' },
+  { key: 'seafood',label: '水产', icon: '🐟' },
+  { key: 'leafy',  label: '叶菜', icon: '🥬' },
+  { key: 'root',   label: '根茎', icon: '🥕' },
+  { key: 'fungus', label: '菌菇', icon: '🍄' },
+  { key: 'bean',   label: '豆制品', icon: '🫘' },
+  { key: 'other',  label: '其他', icon: '🧄' },
+];
+
+const CAT_COLORS = {
+  pork:    { bg: '#fde8e4', text: '#c0392b' },
+  beef:    { bg: '#fdf0e4', text: '#a0522d' },
+  poultry: { bg: '#fef3e0', text: '#b7791f' },
+  lamb:    { bg: '#fef9e7', text: '#9a7d0a' },
+  seafood: { bg: '#e8f4fd', text: '#1a5276' },
+  leafy:   { bg: '#e8f8e8', text: '#1e8449' },
+  root:    { bg: '#fef5e7', text: '#b9770e' },
+  fungus:  { bg: '#f5eef8', text: '#6c3483' },
+  bean:    { bg: '#fef9e7', text: '#7d6608' },
+  other:   { bg: '#eaecef', text: '#5d6d7e' },
+};
+
+const INGREDIENTS = [
+  // ── 猪肉 ──
+  { id:'spareribs', name:'排骨', category:'pork', icon:'🥩', waterTemp:'cold', waterReason:'排骨血水多、腥味重，凉水下锅焯水能让血沫随着水温升高慢慢析出。热水下锅表面瞬间凝固，血水锁在里面出不来，汤会腥。', prep:['斩成 3-5cm 小段','冷水浸泡 20-30 分钟泡出血水','冷水下锅加姜片料酒，水开撇浮沫','捞出后用温水冲洗（忌用冷水冲）'], tip:'焯水后不要用冷水冲，否则肉质紧缩变柴。', severity:2 },
+  { id:'pork-belly', name:'五花肉', category:'pork', icon:'🥓', waterTemp:'cold', waterReason:'红烧肉凉水下锅焯水去腥；做回锅肉则整块凉水下锅煮至八成熟再切片。', prep:['整块冲洗干净','冷水下锅加葱姜料酒','水开后再煮 3-5 分钟','捞出晾凉后切块/切片'], tip:'红烧肉焯水后要沥干，否则下油锅会溅油。', severity:2 },
+  { id:'pork-tenderloin', name:'里脊肉', category:'pork', icon:'🥩', waterTemp:'hot', waterReason:'里脊肉嫩、血水少，滑炒或水煮肉片时热水下锅可快速锁住水分保持嫩滑。', prep:['逆纹切薄片（顺纹切会老）','料酒、盐、蛋清、淀粉抓匀上浆','腌制 10-15 分钟'], tip:'上浆是先加料抓到发黏，再放淀粉抓匀，最后封一层油。', severity:1 },
+  { id:'pig-trotter', name:'猪蹄', category:'pork', icon:'🐷', waterTemp:'cold', waterReason:'猪蹄胶质重、腥味大，必须凉水下锅慢慢逼出血水和杂质。', prep:['刮净表面毛茬和角质','斩成块，冷水浸泡 30 分钟换水 2-3 次','冷水下锅焯水加姜片花椒','捞出温水洗净浮沫'], tip:'猪蹄焯水后趁热下锅炖，凉了胶质凝固更难炖软。', severity:2 },
+
+  // ── 牛肉 ──
+  { id:'beef-brisket', name:'牛腩', category:'beef', icon:'🥩', waterTemp:'cold', waterReason:'牛腩筋膜多、血水重，凉水下锅才能让内部血水充分析出，汤清味正。', prep:['切成 4-5cm 大块（炖后会缩小）','冷水浸泡 30 分钟以上，中途换水','冷水下锅加姜片料酒几粒花椒','水开撇净浮沫，捞出温水冲洗'], tip:'炖牛腩切忌中途加冷水，要加开水，否则牛肉瞬间变硬。', severity:2 },
+  { id:'beef-shank', name:'牛腱子', category:'beef', icon:'🦵', waterTemp:'cold', waterReason:'做酱牛肉时凉水下锅焯水，能去腥且保持肉质紧实不散。', prep:['整块洗净无需切小块','冷水浸泡 1 小时泡出血水','冷水下锅加姜片料酒焯水','捞出后用竹签在肉上扎孔便于入味'], tip:'酱好的牛腱子要完全冷却后再切，热切会散。', severity:2 },
+  { id:'beef-slice', name:'牛肉片（涮/炒）', category:'beef', icon:'🥩', waterTemp:'hot', waterReason:'薄切牛肉片涮火锅或滑炒时热水下锅，3-5 秒即熟，久煮则老。', prep:['逆纹切薄片（越薄越好）','少许小苏打+水抓匀静置 10 分钟嫩化','冲洗后加料酒生抽淀粉抓匀','最后封一层食用油'], tip:'小苏打嫩化后一定要冲洗干净，否则有碱味。', severity:1 },
+  { id:'oxtail', name:'牛尾', category:'beef', icon:'🐂', waterTemp:'cold', waterReason:'牛尾骨多肉少、胶质丰富，必须凉水慢焯才能去净血沫，汤才白。', prep:['斩成段冷水浸泡 1 小时','冷水下锅加姜片料酒焯水','撇净浮沫后捞出温水冲洗','焯水后可先煎至两面金黄再炖'], tip:'炖牛尾汤时加一个番茄，汤色奶白味道更鲜。', severity:2 },
+
+  // ── 禽肉 ──
+  { id:'chicken-whole', name:'整鸡', category:'poultry', icon:'🐔', waterTemp:'cold', waterReason:'炖鸡汤要凉水下锅，让蛋白质慢慢溶入汤中汤才鲜浓。白切鸡则热水下锅浸熟。', prep:['去除内脏、鸡屁股、多余脂肪','冷水浸泡 15 分钟去血水','炖汤：冷水下锅水开撇浮沫转小火','白切鸡：水开后提着鸡浸入提起反复三次后完全浸入'], tip:'炖鸡汤中途不加水不掀盖，否则香味跑掉。', severity:2 },
+  { id:'chicken-breast', name:'鸡胸肉', category:'poultry', icon:'🍗', waterTemp:'hot', waterReason:'鸡胸肉嫩易熟血水少，热水下锅快煮可保持嫩度，凉水久煮会变柴。', prep:['片成薄片或切成丁','料酒盐蛋清淀粉抓匀上浆','水开后将鸡肉滑入变色即捞出'], tip:'鸡胸肉对半片开后用刀背轻轻敲打，肉质更嫩。', severity:1 },
+  { id:'chicken-wings', name:'鸡翅', category:'poultry', icon:'🍗', waterTemp:'cold', waterReason:'鸡翅表皮有残血和腥味，凉水下锅焯水去腥效果最好。', prep:['洗净后在表皮划两刀便于入味','冷水下锅加姜片料酒焯水','捞出沥干后可先煎至两面金黄再烧'], tip:'鸡翅焯水后用厨房纸擦干表面，下油锅才不会溅油。', severity:1 },
+  { id:'duck', name:'鸭肉', category:'poultry', icon:'🦆', waterTemp:'cold', waterReason:'鸭肉腥味比鸡肉重，必须凉水下锅焯水，加花椒或白胡椒去腥。', prep:['斩成块去除尾部（鸭骚味来源）','冷水浸泡 20 分钟','冷水下锅加姜片花椒料酒','水开撇净浮沫捞出温水冲洗'], tip:'鸭肉焯水时加一把花椒，去腥效果比只用料酒好很多。', severity:2 },
+
+  // ── 羊肉 ──
+  { id:'lamb-shank', name:'羊腿肉', category:'lamb', icon:'🐑', waterTemp:'cold', waterReason:'羊肉膻味重，凉水下锅焯水才能让血水中的膻味物质充分析出。', prep:['切成大块冷水浸泡 30-60 分钟换水 2-3 次','冷水下锅加姜片料酒白胡椒','水开撇净浮沫','捞出温水冲洗'], tip:'炖羊肉时加白萝卜块同煮，萝卜能吸附膻味。', severity:2 },
+  { id:'lamb-slice', name:'羊肉片（涮）', category:'lamb', icon:'🥩', waterTemp:'hot', waterReason:'涮羊肉必须沸水下锅，筷子夹住在汤中涮 8-10 秒变色即食。', prep:['逆纹切成极薄的片','摆盘即可不需要腌制'], tip:'涮羊肉的秘诀：肉不离筷，在沸汤中来回摆动，不等完全变色就捞起。', severity:1 },
+  { id:'lamb-ribs', name:'羊排', category:'lamb', icon:'🍖', waterTemp:'cold', waterReason:'羊排血水多，凉水下锅焯水才能去膻去腥。', prep:['沿骨缝切开成单根','冷水浸泡 30 分钟','冷水下锅加姜片料酒焯水','捞出擦干可先煎至两面金黄'], tip:'煎羊排时放几瓣拍扁的大蒜和迷迭香，风味提升一个档次。', severity:2 },
+
+  // ── 水产 ──
+  { id:'fish-whole', name:'整鱼（清蒸）', category:'seafood', icon:'🐟', waterTemp:'hot', waterReason:'清蒸鱼必须水开后上锅，高温蒸汽让表面蛋白质瞬间凝固锁住汁水。冷水上锅鱼肉会蒸老。', prep:['去鳞去鳃去内脏刮净黑膜','鱼身两面各划几刀便于入味','盘底垫姜片葱段把鱼架起来','水开上汽后放入大火蒸 8-10 分钟','出锅倒掉盘中腥味汤汁铺葱丝淋热油'], tip:'蒸鱼的汤汁一定要倒掉，那是腥味集中营；热油淋葱丝激出香味才是灵魂。', severity:1 },
+  { id:'fish-fillet', name:'鱼片（水煮/酸菜鱼）', category:'seafood', icon:'🐟', waterTemp:'hot', waterReason:'鱼片薄嫩，热水下锅滑熟只需 10-20 秒。', prep:['斜刀片成 3-4mm 薄片','用盐抓至发黏出胶','加蛋清淀粉抓匀上浆','水开后将鱼片一片一片滑入变色即捞出'], tip:'鱼片上浆前用盐抓到发黏是关键，能让鱼片久煮不散、口感滑嫩。', severity:1 },
+  { id:'shrimp', name:'虾', category:'seafood', icon:'🦐', waterTemp:'hot', waterReason:'虾肉极嫩，热水下锅变色即熟，久煮变硬。', prep:['剪去虾须和虾枪','挑去虾线（背部第二节用牙签挑出）','水开后下锅虾身弯曲变红即捞出','过冰水可使虾肉更弹'], tip:'白灼虾的水里要加姜片和一点油，虾壳更亮肉更香。', severity:1 },
+  { id:'crab', name:'螃蟹', category:'seafood', icon:'🦀', waterTemp:'cold', waterReason:'蒸螃蟹凉水上锅，随水温升高蟹黄慢慢凝固不会溢出；煮螃蟹则热水下锅。', prep:['用刷子刷净蟹壳缝隙','绑蟹的绳子不要解开（蒸熟后再解）','蒸：凉水上锅肚脐朝上放姜片','煮：水开下锅加姜片紫苏'], tip:'螃蟹肚脐朝上蒸，蟹黄才不会流出来。', severity:2 },
+  { id:'clam', name:'蛤蜊/花甲', category:'seafood', icon:'🐚', waterTemp:'hot', waterReason:'蛤蜊热水下锅开口快，能最大程度保留鲜味汁水。凉水煮会煮老、汤汁寡淡。', prep:['放入盐水静养 2 小时吐沙','滴几滴香油在水面加速吐沙','反复冲洗至水清','水开下锅开口即捞出'], tip:'蛤蜊吐沙时水面滴香油形成油膜，蛤蜊缺氧加速呼吸吐沙更彻底。', severity:1 },
+
+  // ── 叶菜 ──
+  { id:'spinach', name:'菠菜', category:'leafy', icon:'🥬', waterTemp:'hot', waterReason:'菠菜含草酸，必须沸水下锅焯水去除草酸，时间要短（10-20秒），久了会烂且营养流失。', prep:['去根摘去老叶黄叶','洗净泥沙（根部容易藏泥）','水大开后下锅最多 20 秒','捞出立刻过凉水保持翠绿','挤干水分再烹饪'], tip:'菠菜焯水后过凉水能锁住叶绿素，保持翠绿色泽。', severity:2 },
+  { id:'bok-choy', name:'小白菜/油菜', category:'leafy', icon:'🥬', waterTemp:'hot', waterReason:'叶菜类纤维嫩易熟，热水快焯保持脆嫩口感。凉水煮会软烂发黄。', prep:['掰开叶片逐片冲洗','水开加少许盐和几滴油','下锅 15-30 秒变软即可捞出'], tip:'焯绿叶菜的水里放一点盐和油，菜的色泽会更鲜亮。', severity:1 },
+  { id:'cabbage', name:'大白菜', category:'leafy', icon:'🥬', waterTemp:'hot', waterReason:'白菜帮和叶熟化时间不同。炒或煮汤时先下帮后下叶；焯水用热水 10 秒即可。', prep:['帮叶分开切，帮斜刀片薄','帮先下锅炒/煮 1 分钟','再放入叶子部分'], tip:'白菜帮斜刀片薄能让它和叶子同步熟透。', severity:1 },
+  { id:'cilantro', name:'香菜', category:'leafy', icon:'🌿', waterTemp:'hot', waterReason:'香菜只适合出锅前或关火后放入，用余温烫一下即可。加热太久香味全无且发苦。', prep:['洗净切段','汤或菜关火/出锅前撒入即可'], tip:'香菜的香味来自挥发性精油，遇热即散，所以必须最后放。', severity:1 },
+
+  // ── 根茎 ──
+  { id:'potato', name:'土豆', category:'root', icon:'🥔', waterTemp:'cold', waterReason:'土豆含大量淀粉，切块后冷水下锅才能均匀熟透。热水下锅表面糊化、里面夹生。', prep:['去皮后放入冷水中防氧化变黑','切块后再次泡水去除表面淀粉','冷水下锅煮至筷子能轻松插入','炒土豆丝需泡水去淀粉后沸水快焯 30 秒'], tip:'土豆去皮后必须泡在水里，暴露在空气中会氧化变黑。', severity:1 },
+  { id:'carrot', name:'胡萝卜', category:'root', icon:'🥕', waterTemp:'cold', waterReason:'胡萝卜质地硬密度大，冷水下锅才能由内到外均匀熟透。炖汤时和肉类一起冷水下锅。', prep:['去皮滚刀切成块','炖汤：与肉一同冷水下锅','炒菜：可先沸水焯 1 分钟再炒'], tip:'β-胡萝卜素是脂溶性的，与油脂一起烹饪更利于营养吸收。', severity:1 },
+  { id:'white-radish', name:'白萝卜', category:'root', icon:'🥬', waterTemp:'cold', waterReason:'白萝卜冷水下锅能让辣味随水温升高慢慢挥发，炖出的萝卜更甜汤更清。', prep:['去皮切成滚刀块或厚片','炖汤时冷水下锅与肉同炖','如果单独炖萝卜水开后可撇去表面浮沫'], tip:'白萝卜皮辣味重，炖汤一定要去皮；萝卜有"破气"作用别和人参同食。', severity:1 },
+  { id:'lotus-root', name:'莲藕', category:'root', icon:'🪷', waterTemp:'cold', waterReason:'莲藕冷水下锅能保持脆度；如果想炖粉糯则热水下锅。', prep:['去皮切成厚片或滚刀块','切后立即泡入水中防氧化变黑','可在水中加少许白醋保持洁白','炖汤：冷水下锅脆，热水下锅粉'], tip:'切莲藕的刀和砧板不能沾油否则藕会发黑；用不锈钢锅煮藕不易变色。', severity:2 },
+  { id:'bamboo-shoot', name:'竹笋', category:'root', icon:'🎋', waterTemp:'cold', waterReason:'竹笋含草酸和苦味物质，必须冷水下锅焯水较长时间才能去除涩味。', prep:['剥去外壳切除老根','切成片或块','冷水下锅水开后继续煮 5-10 分钟','捞出过凉水浸泡备用'], tip:'竹笋焯水时加一把米或少许食用碱，能有效去除涩味和草酸。', severity:3 },
+
+  // ── 菌菇 ──
+  { id:'shiitake', name:'香菇（鲜）', category:'fungus', icon:'🍄', waterTemp:'hot', waterReason:'鲜香菇吸水性强，热水快焯即可。冷水久泡或久煮会吸水过多失去口感。', prep:['剪去菌柄老硬部分','用湿布或软刷轻擦表面（尽量不水洗）','如需水洗快速冲洗后立即沥干'], tip:'香菇尽量不要长时间泡水，吸水后炒出来会出水口感变差。', severity:1 },
+  { id:'dried-shiiake', name:'香菇（干）', category:'fungus', icon:'🍄', waterTemp:'cold', waterReason:'干香菇必须用冷水或温水慢慢泡发，热水会破坏呈鲜物质并使香味流失。', prep:['用冷水或 30-40℃ 温水浸泡 2-4 小时','泡香菇的水过滤后可用来做汤','泡发后剪去菌柄硬根'], tip:'干香菇的鲜味来自鸟苷酸，泡香菇的水是天然的鲜味剂不要倒掉。', severity:1 },
+  { id:'enoki', name:'金针菇', category:'fungus', icon:'🍄', waterTemp:'hot', waterReason:'金针菇极嫩，热水快焯或最后下锅，30 秒就熟，久了嚼不烂。', prep:['切去根部 2-3cm','用手撕散成小束','火锅/汤：最后放入煮 30 秒即可'], tip:'金针菇根部一定要切干净，那里藏污纳垢还嚼不动。', severity:1 },
+  { id:'wood-ear', name:'木耳', category:'fungus', icon:'🍄', waterTemp:'cold', waterReason:'干木耳用冷水泡发口感脆；热水泡发快但口感不脆。泡发后焯水用热水即可。', prep:['干木耳：冷水泡发 1-2 小时','泡发后摘去根部硬蒂','撕成小朵沸水焯 1-2 分钟'], tip:'木耳泡发超过 4 小时就有细菌繁殖风险，夏天控制在 2 小时内。', severity:2 },
+
+  // ── 豆制品 ──
+  { id:'tofu-soft', name:'嫩豆腐/内酯豆腐', category:'bean', icon:'🧈', waterTemp:'hot', waterReason:'嫩豆腐只需热水烫一下或最后放入汤中，搅动过多会碎。', prep:['从盒中取出倒扣在砧板上切块','用淡盐水浸泡 10 分钟去豆腥且不易碎','汤类：出锅前 3-5 分钟放入'], tip:'嫩豆腐在淡盐水中泡一会儿，豆腥味没了煮时也不容易碎。', severity:1 },
+  { id:'tofu-firm', name:'老豆腐', category:'bean', icon:'🧈', waterTemp:'cold', waterReason:'老豆腐冷水下锅煮才能热透中心。也可先煎后炖风味更佳。', prep:['切成厚片或块','用淡盐水浸泡 15 分钟去豆腥并增加韧性','冷水下锅煮至内部热透','也可先两面煎至金黄再炖'], tip:'豆腐焯水时在水里加一点盐，豆腐会更韧不容易碎。', severity:1 },
+  { id:'tofu-skin', name:'腐竹/豆皮', category:'bean', icon:'🫘', waterTemp:'cold', waterReason:'干腐竹用冷水泡发更劲道，热水泡发快但容易外烂里硬。', prep:['干腐竹：冷水泡发 2-3 小时（压个盘子防浮起）','泡发后切段','炒或煮汤时较后放入已泡发的加热即熟'], tip:'泡腐竹时上面压个盘子让它完全浸没，泡得均匀。', severity:1 },
+
+  // ── 其他 ──
+  { id:'egg', name:'鸡蛋', category:'other', icon:'🥚', waterTemp:'cold', waterReason:'煮整蛋必须冷水下锅，随水温升高蛋白均匀凝固。热水下锅蛋壳易炸裂蛋白外溢。', prep:['从冰箱取出回温 5 分钟','冷水下锅水要没过鸡蛋','水开后计时：溏心 6 分钟全熟 10 分钟','捞出立刻放入冷水中好剥壳'], tip:'煮蛋的水里加一点盐或白醋，即使蛋壳有裂缝蛋白也不会溢出来。', severity:1 },
+  { id:'corn', name:'玉米', category:'other', icon:'🌽', waterTemp:'cold', waterReason:'玉米冷水下锅随水温升高甜味慢慢释放煮出来更甜。热水下锅外熟里生。', prep:['剥去外层老皮保留最内层 1-2 层薄皮','冷水下锅水没过玉米','水开后煮 15-20 分钟（甜玉米）','糯玉米 25-30 分钟'], tip:'煮玉米时保留一两层内皮，玉米粒不会破裂甜味被锁在里面。', severity:1 },
+  { id:'tomato', name:'番茄/西红柿', category:'other', icon:'🍅', waterTemp:'hot', waterReason:'做汤或炒时先用热水烫一下方便去皮，口感更好。', prep:['顶部划十字花刀','沸水中烫 10-15 秒看到皮卷起立刻捞出','放入冷水中过一下轻松撕皮','切块后炒出红油再加水'], tip:'番茄去皮后炒到出红油再加水，汤色红亮番茄味浓郁。', severity:1 },
+  { id:'kelp', name:'海带', category:'other', icon:'🌿', waterTemp:'cold', waterReason:'干海带冷水泡发营养和鲜味保留最好。鲜海带炖汤可冷水下锅。', prep:['干海带：冷水泡发 2-3 小时','白霜（甘露醇）不要洗掉','泡发后切成需要的形状','炖汤时冷水下锅与骨头同炖'], tip:'海带表面的白霜（甘露醇）是天然鲜味物质不要洗掉。', severity:1 },
+  { id:'rice-noodle', name:'粉条/粉丝', category:'other', icon:'🍜', waterTemp:'cold', waterReason:'干粉条用冷水或温水泡发更 Q 弹。直接热水煮容易外面糊烂里面还硬。', prep:['干粉条：用 40-50℃ 温水浸泡 20-30 分钟','泡软后捞出沥干','做菜时最后放入加热即熟'], tip:'粉条不要直接下锅煮干的，一定要先泡软否则吸汤太多。', severity:1 },
+  { id:'ginger', name:'生姜', category:'other', icon:'🫚', waterTemp:'cold', waterReason:'生姜作为去腥辅料时冷水下锅，随水温升高释放姜辣素，去腥效果最好。', prep:['洗净拍扁或切片（拍扁比切片更出味）','冷水下锅与肉类一同加热'], tip:'姜拍扁比切片出味更足；姜皮性凉保留姜皮同煮不容易上火。', severity:1 },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+let activeCat = 'all';
+
+function renderCats() {
+  document.getElementById('catsScroll').innerHTML = CATEGORIES.map(c =>
+    `<button class="tab${c.key === activeCat ? ' active' : ''}" data-cat="${c.key}">${c.icon} ${c.label}</button>`
+  ).join('');
+}
+
+function renderCards(filterText = '') {
+  const grid = document.getElementById('grid');
+  const countEl = document.getElementById('resultCount');
+  const q = filterText.trim().toLowerCase();
+
+  let items = INGREDIENTS;
+  if (activeCat !== 'all') items = items.filter(i => i.category === activeCat);
+  if (q) items = items.filter(i =>
+    i.name.includes(q) || i.category.includes(q) ||
+    i.prep.some(p => p.includes(q)) || i.tip.includes(q)
+  );
+
+  countEl.textContent = items.length === INGREDIENTS.length && !q && activeCat === 'all'
+    ? `共 ${INGREDIENTS.length} 种食材`
+    : `找到 ${items.length} 种食材`;
+
+  if (items.length === 0) {
+    grid.innerHTML = `<div class="no-results">没有找到匹配"${filterText}"的食材<br>试试其他关键词~</div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(i => {
+    const catMeta = CATEGORIES.find(c => c.key === i.category);
+    const colors = CAT_COLORS[i.category] || { bg: '#f0ece4', text: '#6b5e4e' };
+
+    const wc = i.waterTemp === 'hot' ? 'water-hot' : i.waterTemp === 'cold' ? 'water-cold' : 'water-both';
+    const we = i.waterTemp === 'hot' ? '🔥' : i.waterTemp === 'cold' ? '🧊' : '🔥🧊';
+    const wl = { cold: '凉水下锅', hot: '热水下锅', both: '视做法而定' }[i.waterTemp];
+
+    const sevLabel = { 1: '简单', 2: '中等', 3: '需注意' }[i.severity];
+    const sevClass = { 1: 'sev-low', 2: 'sev-mid', 3: 'sev-high' }[i.severity];
+    const sevPct = { 1: '25%', 2: '55%', 3: '85%' }[i.severity];
+
+    return `
+    <div class="card" data-id="${i.id}">
+      <div class="card-top" style="background:linear-gradient(135deg,${colors.bg}22,${colors.bg}44);">
+        <div class="card-icon" style="background:${colors.bg};color:${colors.text};">${i.icon}</div>
+        <div>
+          <div class="card-name">${i.name}</div>
+          <div class="card-cat">${catMeta ? catMeta.icon+' '+catMeta.label : i.category}</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="info-row">
+          <span class="info-label">水温</span>
+          <span class="info-value"><span class="water-badge ${wc}">${we} ${wl}</span></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">原因</span>
+          <span class="info-value">${i.waterReason}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">处理步骤</span>
+          <ul class="prep-list">${i.prep.map(s => `<li>${s}</li>`).join('')}</ul>
+        </div>
+        <div class="info-row">
+          <span class="info-label">贴士</span>
+          <span class="tip-text">💡 ${i.tip}</span>
+        </div>
+        <div class="severity-wrap">
+          <div class="severity-label">处理难度：${sevLabel}</div>
+          <div class="severity-bar"><div class="severity-fill ${sevClass}" style="width:${sevPct}"></div></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('catsScroll').addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  activeCat = tab.dataset.cat;
+  renderCats();
+  renderCards(document.getElementById('searchInput').value);
+});
+
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+
+searchInput.addEventListener('input', () => {
+  const v = searchInput.value;
+  searchClear.classList.toggle('visible', v.length > 0);
+  renderCards(v);
+});
+
+searchClear.addEventListener('click', () => {
+  searchInput.value = '';
+  searchClear.classList.remove('visible');
+  searchInput.focus();
+  renderCards('');
+});
+
+// ── Scroll to top ──
+const toTopBtn = document.getElementById('toTop');
+window.addEventListener('scroll', () => {
+  toTopBtn.classList.toggle('visible', window.scrollY > 400);
+});
+toTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+// ── PWA Install ──
+let deferredPrompt;
+const installBanner = document.getElementById('installBanner');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBanner.classList.add('show');
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') installBanner.classList.remove('show');
+  deferredPrompt = null;
+});
+
+document.getElementById('installClose').addEventListener('click', () => {
+  installBanner.classList.remove('show');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SERVICE WORKER
+// ═══════════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+renderCats();
+renderCards();
+</script>
+</body>
+</html>
